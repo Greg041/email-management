@@ -1,4 +1,4 @@
-import { EmailStatus } from "./enums";
+import { EmailStatus, ResponseStatusType } from "./enums";
 
 export interface ClientRaw {
   id: string;
@@ -31,4 +31,15 @@ export interface EmailTemplate {
 export interface EmailFormData {
   subject: string;
   templateId: string | null;
+  recipientEmails?: string[];
+}
+
+export interface GenericResponse {
+  status: number;
+  message: string;
+}
+
+export interface ToastProps {
+  message: string;
+  type: ResponseStatusType;
 }

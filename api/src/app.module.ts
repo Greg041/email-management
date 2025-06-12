@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailsModule } from './resources/emails/emails.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmailTemplate } from './resources/emails/entities/email-template.entity';
+import { CommonModule } from './resources/common/common.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EmailTemplate } from './resources/emails/entities/email-template.entity
     GoogleSheetsModule,
     EmailsModule,
     ClientsModule,
+    CommonModule,
   ],
   controllers: [],
   providers: [],

@@ -10,25 +10,83 @@ export class GoogleSheetsService {
     ),
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
+  private readonly sheets = google.sheets({ version: 'v4', auth: this.auth });
+  private readonly sheetId = this.configServ.getOrThrow<string>('WORKSHEET_ID');
   private readonly logger: ConsoleLogger = new ConsoleLogger(
     GoogleSheetsService.name,
   );
 
   constructor(private readonly configServ: ConfigService) {}
 
-  async getSheetData(sheetId: string): Promise<any> {
-    const sheets = google.sheets({ version: 'v4', auth: this.auth });
-    const sheetRange = `${this.configServ.getOrThrow('CLIENTS_SHEET_NAME')}!A1:Z1000`;
+  async getSheetData(): Promise<any> {
+    const readSheetRange = `${this.configServ.getOrThrow('CLIENTS_SHEET_NAME')}!A1:Z1000`;
     try {
-      const sheet = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: sheetRange,
+      const sheet = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.sheetId,
+        range: readSheetRange,
       });
       return sheet.data;
     } catch (error) {
       this.logger.error('Error fetching sheet data:', error);
       throw new BadGatewayException(
-        'Hubo un error al obtener los datos de la hoja, por favor comuníquese con soporte para más información.',
+        'There was an error retrieving the sheet data, please contact support for more information.',
+      );
+    }
+  }
+
+  async writeSheet(params: {
+    columnIndex: number;
+    rowIndex: number;
+    text: string;
+  }) {
+    // Convert column number to letter (A=1, B=2, ...)
+    const columnLetter = String.fromCharCode(64 + params.columnIndex);
+    const writeSheetRange = `${this.configServ.getOrThrow('CLIENTS_SHEET_NAME')}!${columnLetter}${params.rowIndex}`;
+    try {
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetId,
+        range: writeSheetRange,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[params.text]],
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error fetching sheet data:', error);
+      throw new BadGatewayException(
+        'There was an error writing data to the sheet, please contact support for more information.',
+      );
+    }
+  }
+
+  async writeSheetRange(params: {
+    text: string[][];
+    columnStartIdx: number;
+    rowStartIdx: number;
+    columnEndIdx?: number;
+    rowEndIdx?: number;
+  }) {
+    // Convert column number to letter (A=1, B=2, ...)
+    const columnStartLetter = String.fromCharCode(64 + params.columnStartIdx);
+    const columnEndLetter =
+      params.columnEndIdx &&
+      params.rowEndIdx &&
+      String.fromCharCode(64 + params.columnEndIdx);
+    // Construct the range
+    const writeSheetRange = `${this.configServ.getOrThrow('CLIENTS_SHEET_NAME')}!${columnStartLetter}${params.rowStartIdx}${columnEndLetter ? ':' + columnEndLetter + params.rowEndIdx : ''}`;
+    try {
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: this.sheetId,
+        range: writeSheetRange,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: params.text,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Error fetching sheet data:', error);
+      throw new BadGatewayException(
+        'There was an error writing data to the sheet, please contact support for more information.',
       );
     }
   }
